@@ -1,40 +1,40 @@
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 
 import javax.swing.JComponent;
-import javax.swing.JFrame;
-import javax.swing.JButton;
-import java.awt.Font;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseEvent;
-import javax.swing.JPanel;
 import java.awt.event.MouseAdapter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import javax.swing.border.LineBorder;
-
-import com.sun.prism.Image;
-
-import java.awt.GridLayout;
 
 public class Sketchframe extends JComponent {
 
-	private int Npnt, oldx, oldy, nwx, nwy;
-	private ArrayList cords;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5772370848777933377L;
+	public int Npnt, oldx, oldy, nwx, nwy;
+	public  ArrayList<Coordinates> cords;
 	private Graphics2D g2;
+	public  Coordinates c,c2;
 	private java.awt.Image image;
 
 	public Sketchframe() {
-		// cords = new ArrayList();
-		setDoubleBuffered(false);
-		addMouseListener(new MouseAdapter() {
+		 cords = new ArrayList<Coordinates>();
+		 setDoubleBuffered(false);
+		 
+		 addMouseListener(new MouseAdapter() {
 
 			public void mousePressed(MouseEvent e2) {
 				oldx = e2.getX();
 				oldy = e2.getY();
+				 c2= new Coordinates(oldx, oldy);
+				cords.add(c2);
 			}
 		});
 		addMouseMotionListener(new MouseMotionAdapter() {
@@ -48,13 +48,12 @@ public class Sketchframe extends JComponent {
 					repaint();
 					oldx = nwx;
 					oldy = nwy;
+					
+					
 				}
-				// Coordinates c = new Coordinates(e1.getX(), e1.getY());
-				// Npnt = Npnt + 1;
-				// System.out.println("points are:" + c.getX() + " , " +
-				// c.getY());
-				// System.out.println("number of pnts are:" + Npnt);
-
+				 c2 = new Coordinates(e1.getX(), e1.getY());
+				 Npnt = Npnt + 1;		
+                 cords.add(c2);
 			}
 
 		});
@@ -76,12 +75,63 @@ public class Sketchframe extends JComponent {
 		g2.fillRect(0, 0, getSize().width, getSize().height);
 		g2.setPaint(Color.black);
 		repaint();
+		cords.clear();
 	}
 
-	public int Recognize() {
-		int z;
-		z=2;
+	public int Recognize(ArrayList<Coordinates> cords2) {
+		
+		FeatureExtraction F= new FeatureExtraction(cords2);
+		ArrayList<Coordinates> nwpnts= new ArrayList<Coordinates>();
+		nwpnts=	F.Resample(64);
+		nwpnts=F.Rotatetozero(nwpnts);
+		nwpnts=F.ScaletoSquare(nwpnts,500);
+		ArrayList<Templates> templates = F.loadtemplates();
+		double[] score =new double[16];
+		score=F.Recog(nwpnts,templates);
+		double max=0;
+		int z=0;
+		for(int i=0;i<score.length;i++){
+			if (score[i]>max){
+				max=score[i];
+				z=i;
+			}
+		}
+		
 		return z;
+		
+	}
+
+	public ArrayList<Coordinates> getPnts() {
+		//Coordinates c3= new Coordinates(nwx,nwy);
+		return cords;
+	}
+
+	public int getNpnt() {
+		Npnt= cords.size();
+		
+		return Npnt;
+	}
+
+	public void addTemplate(String Templatename) {
+		try {
+			FeatureExtraction F= new FeatureExtraction(cords);
+			ArrayList<Coordinates> nwpnts= new ArrayList<Coordinates>();
+			nwpnts=	F.Resample(64);
+			nwpnts=F.Rotatetozero(nwpnts);
+			nwpnts=F.ScaletoSquare(nwpnts,500);
+			
+			ArrayList<String> lines = new ArrayList<String>();
+			for(Coordinates i :nwpnts){
+				Integer x=i.getX();
+				Integer y=i.getY();
+				lines.add(x.toString()+","+y.toString());
+			}
+			
+			Files.write(Paths.get("Training_files/"+Templatename+".txt"),lines);
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 }

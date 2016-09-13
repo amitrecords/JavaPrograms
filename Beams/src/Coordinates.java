@@ -2,13 +2,17 @@
 public class Coordinates {
 
 	
-	private static int x;
-	private static int y;
+	private  int x;
+	private  int y;
 	
 	public Coordinates(int x,int y)
 	{
 		this.x = x;
 		this.y = y;
+	}
+
+	public Coordinates() {
+		
 	}
 
 	public int getX() {
@@ -28,9 +32,5 @@ public class Coordinates {
 	}
 	
 	
-	/**
-	 * @param args
-	 */
 	
-
 }
